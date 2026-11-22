@@ -1,9 +1,15 @@
 // Cloudflare deploys the prototype as a Worker that serves static files. Its builds run `npx wrangler deploy`,
 // which reads this file: it runs the build command below, then uploads prototype/dist/ (the page, songs, covers
-// and art). The name has to match the Worker's name in the Cloudflare dashboard.
+// and art). Song requests go through prototype/worker.js first, which adds the range requests the static files
+// lack, so players can seek. The name has to match the Worker's name in the Cloudflare dashboard.
 {
   "name": "saignedheaven",
+  "main": "prototype/worker.js",
   "compatibility_date": "2026-11-01",
   "build": { "command": "node prototype/build.mjs" },
-  "assets": { "directory": "./prototype/dist" }
+  "assets": {
+    "directory": "./prototype/dist",
+    "binding": "ASSETS",
+    "run_worker_first": ["/songs/*"]
+  }
 }

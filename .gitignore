@@ -3,8 +3,9 @@ node_modules/
 dist/
 public/media/
 
-# Local settings and secrets
+# Local settings and secrets, and wrangler's local test state
 .env*.local
+.wrangler/
 .idea/
 .claude/settings.local.json
 
