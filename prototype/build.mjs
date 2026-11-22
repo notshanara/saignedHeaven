@@ -3,11 +3,12 @@
 //               loudness and bass (from peaks.json), the list of covers, the wordmark, and the night colours
 //   songs/      the MP3s in ../sai_songs, under ids made from their titles
 //   covers/     the images in ../song_covers, under web-safe names
-//   art/        the images in ../site_art (the background photo)
+//   art/        the images in ../site_art (the background photo and the home-screen icon)
 // It also checks that the page's main tags pair up and its script parses, and warns about songs that are missing
 // a file, a measurement or a place in the page's song list.
-// index.html is a complete document, ready for any web host (Cloudflare deploys it: see wrangler.jsonc). With
-// --fragment, it's written without the document around it, for publishing to Claude, whose host adds its own.
+// index.html is a complete document with the tab icon, ready for any web host (Cloudflare deploys it: see
+// wrangler.jsonc). With --fragment, it's written without the document around it or the icons, for publishing to
+// Claude, whose host adds its own.
 // Usage, from anywhere: node prototype/build.mjs [--fragment]
 import { readFileSync, writeFileSync, mkdirSync, readdirSync, copyFileSync, existsSync, rmSync } from 'node:fs';
 import { dirname, join, extname } from 'node:path';
@@ -70,7 +71,7 @@ function copyFiles(from, to, kind, rename) {
 mkdirSync(dist, { recursive: true });
 const songFiles = copyFiles('sai_songs', 'songs', /\.mp3$/i, songName);
 const covers = Object.values(copyFiles('song_covers', 'covers', IMAGE, safeName));
-copyFiles('site_art', 'art', IMAGE, safeName);
+const art = copyFiles('site_art', 'art', IMAGE, safeName);
 
 let html = readFileSync(join(here, 'player.tpl'), 'utf8').replace(/\r\n/g, '\n'); // a Windows checkout may use \r\n
 
@@ -95,6 +96,16 @@ const marks = [['wordmark.svg', 'wordmark-full'], ['wordmark-plain.svg', 'wordma
 const wordmark = marks.every(([p]) => existsSync(p))
   ? marks.map(([p, cls]) => readFileSync(p, 'utf8').trim().replace('<svg ', `<svg class="wordmark-art ${cls}" aria-hidden="true" focusable="false" `)).join('')
   : '<span class="wordmark-text" aria-hidden="true">signedHeaven</span>';
+
+// The tab icon (site_art/favicon.svg, put straight into the page) and the icon iPhones put on the home screen
+// (site_art/apple-touch-icon.png, copied into art/). Only the complete document gets them: Claude's host has its own.
+const favicon = join(here, '..', 'site_art', 'favicon.svg');
+if (!existsSync(favicon)) console.warn('warning: no site_art/favicon.svg, so the page has no tab icon');
+if (!art['apple-touch-icon']) console.warn('warning: no site_art/apple-touch-icon.png, so iPhones make their own home-screen icon');
+const icons = [
+  existsSync(favicon) && `<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,${encodeURIComponent(readFileSync(favicon, 'utf8').replace(/<!--[\s\S]*?-->/g, '').replace(/\s+/g, ' ').replace(/> </g, '><').trim())}">`,
+  art['apple-touch-icon'] && `<link rel="apple-touch-icon" href="art/${art['apple-touch-icon']}">`,
+].filter(Boolean);
 
 // The night colours are written once, in the :root[data-theme="dark"] block; the dark-device block gets a copy.
 const night = /\n:root\[data-theme="dark"\] \{\n([\s\S]*?)\n\}\n/.exec(html);
@@ -132,7 +143,7 @@ if (!process.argv.includes('--fragment')) {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+${icons.map((link) => `${link}\n`).join('')}<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
 ${html.slice(0, headEnd)}
 </head>
 <body>
@@ -147,3 +158,4 @@ console.log(`built prototype/dist/index.html (${(Buffer.byteLength(html) / 1024)
 console.log(`songs: ${listed.map((f) => songData[f].src || `${f} (no file)`).join(' | ')}`);
 console.log(`covers: ${covers.join(' | ')}`);
 console.log(`wordmark: ${wordmark.startsWith('<svg') ? 'Amelie outlines' : 'set in type (no wordmark SVGs in site_art/)'}`);
+if (!process.argv.includes('--fragment')) console.log(`icons: ${icons.length ? icons.map((link) => /rel="([^"]+)"/.exec(link)[1]).join(', ') : 'none'}`);

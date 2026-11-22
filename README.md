@@ -466,6 +466,12 @@ The rule of thumb: by day, write in wine ink. At night, write in ivory. White te
 - **The wordmark:** "signedHeaven" in Amelie, a flowing brush-script handwriting font by Graphix Line Studio, from Creative Fabrica. Its license doesn't allow embedding the font in a website, so the wordmark is the lettering drawn as outlines (SVG), made from the font file by `prototype/make-wordmark.mjs` ([section 12](#12-security-rights-and-privacy)). There are two versions in `site_art/`: `wordmark.svg`, a signature with Amelie's lead-in swash on the "s" and trailing tail on the "n", for wider screens, and `wordmark-plain.svg`, without them, for phones, where it keeps the letters larger. Both take the text colour, with a soft glow.
 - **Everything else:** Century Gothic, a round geometric sans-serif. It's a paid Monotype font. Visitors who have it installed (it comes with Microsoft Office) see it, and showing it to everyone needs a Monotype web license. Everyone else sees Didact Gothic, a free look-alike, self-hosted as a subset WOFF2. All interface text uses the regular weight, which suits the light, airy look.
 
+**The browser tab**
+
+- **Title:** "Saigned".
+- **Icon:** a hand-painted-style brush-stroke cross, drawn for the site (`site_art/favicon.svg`): the ink colour, or cream when the device is in dark mode. Safari always shows an icon in its light-mode colours, even on a dark tab bar, so the ink cross has a thin paper-coloured edge that keeps it visible there and can't be seen on light tab bars.
+- **Home-screen icon:** `site_art/apple-touch-icon.png`, the same cross on the cream paper, 180 × 180, for iPhones. It's `favicon.svg` drawn 136 px tall in the middle, screenshotted in a headless browser; remake it if the cross changes.
+
 **Motion**
 
 - Slow and floaty. Interface transitions take 200–600 ms with a gentle settle (`cubic-bezier(0.22, 1, 0.36, 1)`). The glow behind the player shifts colour over 2.4 seconds, and the sky over 2.6.
@@ -540,7 +546,7 @@ The target is the current and previous major versions of Chrome, Edge, Firefox a
 saigned/
 ├─ sai_songs/                  your songs (the source of truth)
 ├─ song_covers/                your cover images
-├─ site_art/                   the background photo and the wordmark (SVG)
+├─ site_art/                   the background photo, the wordmark (SVG) and the tab and home-screen icons
 ├─ prototype/                  the working design (see below)
 │  ├─ player.tpl               the page: HTML, CSS and script in one file
 │  ├─ peaks.json               loudness and bass measured from the six songs
@@ -633,7 +639,7 @@ The waveform, the pulse and the equaliser follow the audio's own clock, so they 
 
 | Command | What it does |
 |---|---|
-| `node prototype/build.mjs` | Builds `prototype/dist/index.html` from `player.tpl` and `peaks.json`, checks that the page's script parses and its tags pair up, and copies the songs from `sai_songs/` into `dist/songs/`, the covers from `song_covers/` into `dist/covers/` and the photo from `site_art/` into `dist/art/`, so `dist/` is complete on its own. It fills in each song's title, credit, length, file and measurements, and writes the night colours, kept once in `player.tpl`, into both places the page needs them. Songs are named by their ids (`Who's that out there! (prod.wixxy).mp3` becomes `whos-that-out-there.mp3`). Covers get web-safe names (`download (11).jpg` becomes `download-11.jpg`) and are listed in the page automatically, so new ones just need a rebuild. It also puts the wordmark from `site_art/` into the header, and warns about any song in the page's list (`SONGS` in `player.tpl`) that has no MP3 or measured waveform, and any MP3 missing from that list. |
+| `node prototype/build.mjs` | Builds `prototype/dist/index.html` from `player.tpl` and `peaks.json`, checks that the page's script parses and its tags pair up, and copies the songs from `sai_songs/` into `dist/songs/`, the covers from `song_covers/` into `dist/covers/` and the photo and home-screen icon from `site_art/` into `dist/art/`, so `dist/` is complete on its own. It fills in each song's title, credit, length, file and measurements, and writes the night colours, kept once in `player.tpl`, into both places the page needs them. Songs are named by their ids (`Who's that out there! (prod.wixxy).mp3` becomes `whos-that-out-there.mp3`). Covers get web-safe names (`download (11).jpg` becomes `download-11.jpg`) and are listed in the page automatically, so new ones just need a rebuild. It also puts the wordmark from `site_art/` into the header and the tab icon into the page itself (in the full page only: `--fragment`, for Claude, leaves the icons out), and warns about any song in the page's list (`SONGS` in `player.tpl`) that has no MP3 or measured waveform, and any MP3 missing from that list. |
 | `node prototype/make-wordmark.mjs <path to Amelie.otf>` | Draws the wordmark from the font as outlines into `site_art/wordmark.svg` and `wordmark-plain.svg`. It needs the opentype.js library, installed once in this folder with `npm install --no-save opentype.js@1.3.4`. |
 | `node prototype/serve.mjs` | Serves the built page at http://localhost:5179, with the songs and images the build copied beside it. Songs are served with range requests, as R2 serves them, so streaming and seeking behave as they will on the real site. Rebuild and refresh to see changes. |
 
