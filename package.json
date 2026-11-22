@@ -1,0 +1,12 @@
+{
+  "name": "signedheaven",
+  "private": true,
+  "description": "The signedHeaven music player prototype. See README.md.",
+  "scripts": {
+    "build": "node prototype/build.mjs",
+    "preview": "node prototype/serve.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
