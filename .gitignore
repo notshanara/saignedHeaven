@@ -1,7 +1,6 @@
-# Dependencies and build output
+# Dependencies, and build output (dist/ anywhere, including prototype/dist/, which Cloudflare builds itself)
 node_modules/
 dist/
-prototype/dist/
 public/media/
 
 # Local settings and secrets
@@ -9,14 +8,6 @@ public/media/
 .idea/
 .claude/settings.local.json
 
-# Your songs and covers stay out of git (README, 4.1). songs.json is the one exception.
-sai_songs/*
-!sai_songs/songs.json
-song_covers/
-
 # Font files: their licenses don't allow sharing them (README, section 12)
 *.otf
 *.ttf
-
-# The angel photo stays out until its rights are confirmed (README, section 12). Remove this line to add it.
-site_art/angel-wings.jpg

@@ -123,7 +123,7 @@ song_covers/                               the cover images, any names
 - **An artist in the file's tags is kept.** `Interest (prod kuga).mp3` is tagged "Heaven, vezxqr" and `Who's that out there! (prod.wixxy).mp3` "Heaven", so they always show those. Songs without one get a name from `artists` ([4.2](#42-optional-songsjson)).
 - **Covers aren't tied to songs.** On every visit the player deals the images in `song_covers/` out to the songs at random. With more covers than songs, the extras turn up on other visits. To keep a cover with one song, pin it in `songs.json`. Use square images of at least 512 × 512 px: the player never shows a cover wider than about 450 pixels, even on sharp screens. Other shapes are centre-cropped, and smaller images are used as they are, with a warning.
 - **Each song gets a URL-safe id** from its title. For example, `Who's that out there!` becomes `whos-that-out-there` and `_lucid` becomes `lucid`. Renaming a file changes its id.
-- **`sai_songs/` and `song_covers/` are your master copies and stay out of git**, because large binary files bloat a repository forever. Back them up separately, for example to a cloud drive. The one exception is `songs.json`, which is small and worth versioning.
+- **`sai_songs/` and `song_covers/` are in git, so Cloudflare's build from GitHub has them.** You chose this in November 2026 to get the site live. The repository is public, so anyone can download them there, as they can from the site. It makes the repository about 28 MB bigger, and every new or replaced song adds its full size for good, so once the library grows, move the media to R2 as [section 11](#11-hosting-and-deployment) plans. Keep a separate backup of both folders too, for example on a cloud drive.
 
 ### 4.2 Optional `songs.json`
 
@@ -538,8 +538,8 @@ The target is the current and previous major versions of Chrome, Edge, Firefox a
 
 ```
 saigned/
-├─ sai_songs/                  your songs (the source of truth, not in git)
-├─ song_covers/                your cover images (not in git)
+├─ sai_songs/                  your songs (the source of truth)
+├─ song_covers/                your cover images
 ├─ site_art/                   the background photo and the wordmark (SVG)
 ├─ prototype/                  the working design (see below)
 │  ├─ player.tpl               the page: HTML, CSS and script in one file
@@ -594,6 +594,7 @@ saigned/
 │  ├─ unit/
 │  └─ e2e/
 ├─ .gitignore
+├─ wrangler.jsonc              Cloudflare: builds the prototype and deploys it
 ├─ index.html
 ├─ package.json
 ├─ tsconfig.json
@@ -638,6 +639,8 @@ The waveform, the pulse and the equaliser follow the audio's own clock, so they 
 Open the page through `serve.mjs` rather than straight from the disk. Opened as a file, the covers show, but browsers won't let WebGL use the photo, so the plain sky shows instead.
 
 **Adding a song to the prototype:** put its MP3 in `sai_songs/`, add its file name to `SONGS` in `player.tpl` (with `artist` if the file is tagged with one), add its loudness and bass to `peaks.json`, and rebuild. The build fills in everything else. The measurements in `peaks.json` were made in the browser with Web Audio, the same way as step 5 of [4.3](#43-what-npm-run-catalog-does): RMS every 50 ms, then the same through a 140 Hz low-pass for the bass, each scaled to its 99th percentile. There's no script for that in the repository yet, so a new song shows flat bars until it's measured, and the build warns about it.
+
+**On Cloudflare:** the Worker `saignedheaven` builds and deploys the prototype from GitHub on every push to `main`. Its build runs `npx wrangler deploy`, which reads `wrangler.jsonc`: that runs `node prototype/build.mjs`, then uploads `prototype/dist/` (the page, songs, covers and art). The build writes a complete web page. With `--fragment`, it leaves out the document around the page, for publishing to Claude, whose host adds its own.
 
 A published copy, private to your Claude account, is at https://claude.ai/artifact/7Fb8kujYPy7sawWRwrCWku. It's the built page with the six songs in a `songs/` folder (about 27 MB, byte for byte the files in `sai_songs/`), the nine covers in `covers/` and the photo in `art/`. Anyone you share it with can play the songs and save them, so share it only with people you'd send them to. The songs play there too. If one ever won't stream, the player downloads the whole file and plays that instead.
 
@@ -743,7 +746,7 @@ Today's library (6 songs, about 28 MB, plus about 440 KB of covers) fits easily 
   - **Century Gothic** is a Monotype font, and serving it to visitors needs a Monotype web license. Without one, the site names it first, so visitors who have it installed see it, and serves the free Didact Gothic to everyone else.
   - **Didact Gothic** is free under the SIL Open Font License, so it can be self-hosted.
   - Keep font files out of any public repository.
-- **The background photo.** Only use a photo you have the rights to. The angel photo is 736 pixels wide, the size Pinterest serves its images at, so if it came from there, find who took it and ask their permission before launch, or swap in a photo of your own. The same goes for the covers: `download (11).jpg`, for one, is 736 pixels square, the same Pinterest size.
+- **The background photo.** Only use a photo you have the rights to. The angel photo is 736 pixels wide, the size Pinterest serves its images at, so if it came from there, find who took it and ask their permission, or swap in a photo of your own. It is already public: it is in the repository and on the site. The same goes for the covers: `download (11).jpg`, for one, is 736 pixels square, the same Pinterest size.
 - **Brand icons.** The SoundCloud and Instagram icons come from Simple Icons, whose artwork is free to use (CC0). The logos remain their owners' trademarks, which is fine for linking to your own profiles. guns.lol publishes no vector logo, so its icon is traced from the one on guns.lol.
 
 ## 13. Roadmap
@@ -770,7 +773,7 @@ Each milestone ends with something that works.
 **M0: Foundations**
 
 - [ ] Vite + TypeScript (strict) project with ESLint, Prettier and Vitest.
-- [x] `.gitignore` with `node_modules/`, `dist/`, `prototype/dist/`, `public/media/`, `.env*.local`, `.idea/`, `song_covers/` and any `.otf` or `.ttf` font files, plus `sai_songs/*` with an exception for `!sai_songs/songs.json`.
+- [x] `.gitignore` with `node_modules/`, `dist/` (which covers `prototype/dist/`), `public/media/`, `.env*.local`, `.idea/` and any `.otf` or `.ttf` font files. The songs and covers are committed ([4.1](#41-source-folders)).
 - [ ] Folder structure from [section 9](#9-tech-stack-and-project-layout), and the test fixtures.
 - *Done when* `npm run dev` serves a page and `npm test` runs.
 

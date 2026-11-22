@@ -6,7 +6,9 @@
 //   art/        the images in ../site_art (the background photo)
 // It also checks that the page's main tags pair up and its script parses, and warns about songs that are missing
 // a file, a measurement or a place in the page's song list.
-// Usage, from anywhere: node prototype/build.mjs
+// index.html is a complete document, ready for any web host (Cloudflare deploys it: see wrangler.jsonc). With
+// --fragment, it's written without the document around it, for publishing to Claude, whose host adds its own.
+// Usage, from anywhere: node prototype/build.mjs [--fragment]
 import { readFileSync, writeFileSync, mkdirSync, readdirSync, copyFileSync, existsSync, rmSync } from 'node:fs';
 import { dirname, join, extname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -121,8 +123,27 @@ const closed = (n) => html.split(`</${n}>`).length - 1;
 const off = names.filter((n) => opened(n) !== closed(n)).map((n) => `${n} ${opened(n)}/${closed(n)}`);
 if (off.length) throw new Error(`tags that don't pair up (opened/closed): ${off.join(', ')}`);
 
+// The document around the page: the same base as the Claude artifact host's, so the page looks the same on both.
+// The page's head elements (title, links, styles) go in the head and the rest in the body.
+if (!process.argv.includes('--fragment')) {
+  const headEnd = html.indexOf('</style>') + '</style>'.length;
+  html = `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+${html.slice(0, headEnd)}
+</head>
+<body>
+${html.slice(headEnd).trim()}
+</body>
+</html>
+`;
+}
+
 writeFileSync(join(dist, 'index.html'), html);
-console.log(`built prototype/dist/index.html (${(Buffer.byteLength(html) / 1024).toFixed(1)} KB)`);
+console.log(`built prototype/dist/index.html (${(Buffer.byteLength(html) / 1024).toFixed(1)} KB${process.argv.includes('--fragment') ? ', without the document around it' : ''})`);
 console.log(`songs: ${listed.map((f) => songData[f].src || `${f} (no file)`).join(' | ')}`);
 console.log(`covers: ${covers.join(' | ')}`);
 console.log(`wordmark: ${wordmark.startsWith('<svg') ? 'Amelie outlines' : 'set in type (no wordmark SVGs in site_art/)'}`);

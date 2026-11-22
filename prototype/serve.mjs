@@ -1,5 +1,5 @@
-// Local preview of the prototype. Serves dist/index.html inside the same kind of page skeleton the artifact host
-// adds around a published page, and the files the build copied beside it: the songs (dist/songs/), covers
+// Local preview of the prototype. Serves dist/index.html (wrapped in a page skeleton like the Claude artifact host's
+// if it was built with --fragment) and the files the build copied beside it: the songs (dist/songs/), covers
 // (dist/covers/) and art (dist/art/). Songs are served with range requests, as a proper audio host does, so the
 // player can stream and seek.
 // Usage, from anywhere: node prototype/serve.mjs [port]   then open http://localhost:5179 (or your port)
@@ -38,7 +38,8 @@ createServer((req, res) => {
       return;
     }
     res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' });
-    res.end(head ? undefined : wrap(readFileSync(page, 'utf8')));
+    const built = readFileSync(page, 'utf8');
+    res.end(head ? undefined : /^<!doctype/i.test(built) ? built : wrap(built));
     return;
   }
 
