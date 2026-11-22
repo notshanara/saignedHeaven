@@ -72,7 +72,7 @@ const songFiles = copyFiles('sai_songs', 'songs', /\.mp3$/i, songName);
 const covers = Object.values(copyFiles('song_covers', 'covers', IMAGE, safeName));
 copyFiles('site_art', 'art', IMAGE, safeName);
 
-let html = readFileSync(join(here, 'player.tpl'), 'utf8');
+let html = readFileSync(join(here, 'player.tpl'), 'utf8').replace(/\r\n/g, '\n'); // a Windows checkout may use \r\n
 
 // Each song in the page's list (SONGS in player.tpl, by file name without .mp3) gets its title and credit, its file,
 // its length, and its loudness and bass, one byte per 50 ms reading (peaks.json, measured from the MP3s).
