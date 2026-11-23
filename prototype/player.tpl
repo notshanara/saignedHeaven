@@ -579,7 +579,7 @@ body {
       </section>
     </div>
   </div>
-  <p class="note">Prototype: the songs play for real, their waveforms are measured from the files, covers are shuffled each visit, and the text font is a stand-in for Century Gothic.</p>
+  <p class="note">Prototypes saigned by the heavens</p>
 </main>
 
 <footer class="site-footer">
