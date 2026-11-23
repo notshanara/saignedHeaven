@@ -1,11 +1,11 @@
 // Builds the prototype from player.tpl and writes dist/, which is complete on its own and is what gets published:
 //   index.html  the page, with what the build fills in: each song's title, credit, length, file and measured
 //               loudness and bass (from peaks.json), the list of covers, the wordmark, and the night colours
-//   songs/      the MP3s in ../sai_songs, under ids made from their titles
+//   songs/      the MP3s in ../sai_songs that are in the page's song list, under ids made from their titles
 //   covers/     the images in ../song_covers, under web-safe names
 //   art/        the images in ../site_art (the background photo and the home-screen icon)
-// It also checks that the page's main tags pair up and its script parses, and warns about songs that are missing
-// a file, a measurement or a place in the page's song list.
+// It also checks that the page's main tags pair up and its script parses, warns about listed songs that are missing
+// a file or a measurement, and says which MP3s it left off the site because they aren't in the page's song list.
 // index.html is a complete document with the tab icon, ready for any web host (Cloudflare deploys it: see
 // wrangler.jsonc). With --fragment, it's written without the document around it or the icons, for publishing to
 // Claude, whose host adds its own.
@@ -68,17 +68,22 @@ function copyFiles(from, to, kind, rename) {
   return names;
 }
 
+let html = readFileSync(join(here, 'player.tpl'), 'utf8').replace(/\r\n/g, '\n'); // a Windows checkout may use \r\n
+
+// The page's song list (SONGS in player.tpl, by file name without .mp3). Only these songs are published.
+const listed = [...html.matchAll(/\{\s*file:\s*"((?:[^"\\]|\\.)*)"/g)].map((m) => JSON.parse(`"${m[1]}"`));
+const MP3 = /\.mp3$/i;
+const inList = (f) => MP3.test(f) && listed.includes(f.slice(0, -4));
+
 mkdirSync(dist, { recursive: true });
-const songFiles = copyFiles('sai_songs', 'songs', /\.mp3$/i, songName);
+// copyFiles picks files with anything that has a test(), like the IMAGE pattern: for songs, the MP3s in the list
+const songFiles = copyFiles('sai_songs', 'songs', { test: inList }, songName);
 const covers = Object.values(copyFiles('song_covers', 'covers', IMAGE, safeName));
 const art = copyFiles('site_art', 'art', IMAGE, safeName);
 
-let html = readFileSync(join(here, 'player.tpl'), 'utf8').replace(/\r\n/g, '\n'); // a Windows checkout may use \r\n
-
-// Each song in the page's list (SONGS in player.tpl, by file name without .mp3) gets its title and credit, its file,
-// its length, and its loudness and bass, one byte per 50 ms reading (peaks.json, measured from the MP3s).
+// Each listed song gets its title and credit, its file, its length, and its loudness and bass, one byte per 50 ms
+// reading (peaks.json, measured from the MP3s).
 const peaks = JSON.parse(readFileSync(join(here, 'peaks.json'), 'utf8'));
-const listed = [...html.matchAll(/\{\s*file:\s*"((?:[^"\\]|\\.)*)"/g)].map((m) => JSON.parse(`"${m[1]}"`));
 const songData = {};
 for (const f of listed) {
   const mp3 = songFiles[f], w = peaks[f];
@@ -86,9 +91,9 @@ for (const f of listed) {
   if (!w) console.warn(`warning: "${f}" has no measurement in peaks.json, so its bars lie flat and the cover doesn't pulse`);
   songData[f] = { ...splitCredit(f), src: mp3 ? `songs/${mp3}` : '', duration: w ? w.duration : 0, ...(w && { rate: w.rate, peaks: w.peaks, bass: w.bass }) };
 }
-for (const f of Object.keys(songFiles)) {
-  if (!listed.includes(f)) console.warn(`warning: "${f}.mp3" is in sai_songs/ but not in the page's song list (SONGS in player.tpl), so it doesn't show`);
-}
+const songDir = join(here, '..', 'sai_songs');
+const unlisted = existsSync(songDir) ? readdirSync(songDir).filter((f) => MP3.test(f) && !inList(f)) : [];
+if (unlisted.length) console.log(`left off the site (not in the page's song list): ${unlisted.join(' | ')}`);
 
 // The wordmark: Amelie's lettering as outlines (site_art/wordmark.svg and wordmark-plain.svg, made by
 // make-wordmark.mjs), put straight into the header. Without both files, the name is set in type instead.

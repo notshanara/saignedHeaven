@@ -619,9 +619,9 @@ body {
   // The songs in library order, by their file names in sai_songs/ (without .mp3). A song whose file is tagged with an
   // artist keeps it. The build adds the rest from the files themselves: each song's title and producer's credit (a
   // "(prod …)" at the end of the file name), where its MP3 is, its length, and its loudness and bass every 50 ms
-  // (base64, one byte per reading, from peaks.json).
+  // (base64, one byte per reading, from peaks.json). Only the songs listed here are published: an MP3 in sai_songs/
+  // that isn't listed stays off the site.
   const SONGS = [
-    { file: "a spin" },
     { file: "cliche" },
     { file: "_lucid" },
     { file: "Who's that out there! (prod.wixxy)", artist: "Heaven" },
